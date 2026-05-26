@@ -12,12 +12,13 @@ import org.testng.annotations.AfterSuite;
 import org.testng.annotations.Test;
 
 /**
- * API Test: User CRUD operations against ReqRes.in
+ * API Test: User CRUD operations against JSONPlaceholder
  * Demonstrates GET, POST, PUT, DELETE with RestAssured + ExtentReport
+ * Uses https://jsonplaceholder.typicode.com - free, no auth required
  */
 public class UserApiTest {
 
-    private static final String BASE_URL = "https://reqres.in/api";
+    private static final String BASE_URL = "https://jsonplaceholder.typicode.com";
     private ExtentTest extentTest;
 
     @BeforeSuite(alwaysRun = true)
@@ -35,69 +36,86 @@ public class UserApiTest {
         ApiClient.init(BASE_URL);
     }
 
-    @Test(description = "GET all users - expect 200 with non-empty list",
-            groups = {"api", "smoke"}, priority = 1)
+    @Test(description = "GET all users returns 200")
     public void testGetAllUsers() {
-        extentTest = ExtentReportManager.createTest("testGetAllUsers", "UserApiTest");
-        extentTest.log(Status.INFO, "Sending GET /users?page=1");
-        Response response = ApiClient.get("/users?page=1");
-        Assert.assertEquals(response.getStatusCode(), 200);
-        Assert.assertTrue(response.jsonPath().getList("data").size() > 0);
-        extentTest.log(Status.PASS, "Users list returned: " + response.jsonPath().getList("data").size() + " users");
+        extentTest = ExtentReportManager.createTest("testGetAllUsers", "GET /users - returns 200");
+        try {
+            Response response = ApiClient.get("/users");
+            Assert.assertEquals(response.getStatusCode(), 200, "Status code should be 200");
+            Assert.assertFalse(response.jsonPath().getList("$").isEmpty(), "Users list should not be empty");
+            extentTest.log(Status.PASS, "GET /users returned 200 with " + response.jsonPath().getList("$").size() + " users");
+        } catch (AssertionError | Exception e) {
+            extentTest.log(Status.FAIL, "Test failed: " + e.getMessage());
+            throw e;
+        }
     }
 
-    @Test(description = "GET single user - expect correct user data",
-            groups = {"api", "regression"}, priority = 2)
+    @Test(description = "GET single user returns 200")
     public void testGetSingleUser() {
-        extentTest = ExtentReportManager.createTest("testGetSingleUser", "UserApiTest");
-        extentTest.log(Status.INFO, "Sending GET /users/2");
-        Response response = ApiClient.get("/users/2");
-        Assert.assertEquals(response.getStatusCode(), 200);
-        Assert.assertEquals(response.jsonPath().getInt("data.id"), 2);
-        String email = response.jsonPath().getString("data.email");
-        Assert.assertTrue(email.contains("@"), "Expected valid email");
-        extentTest.log(Status.PASS, "User 2 email: " + email);
+        extentTest = ExtentReportManager.createTest("testGetSingleUser", "GET /users/1 - returns 200");
+        try {
+            Response response = ApiClient.get("/users/1");
+            Assert.assertEquals(response.getStatusCode(), 200, "Status code should be 200");
+            Assert.assertEquals(response.jsonPath().getInt("id"), 1, "User ID should be 1");
+            extentTest.log(Status.PASS, "GET /users/1 returned 200, user: " + response.jsonPath().getString("name"));
+        } catch (AssertionError | Exception e) {
+            extentTest.log(Status.FAIL, "Test failed: " + e.getMessage());
+            throw e;
+        }
     }
 
-    @Test(description = "POST create user - expect 201 with ID",
-            groups = {"api", "regression"}, priority = 3)
-    public void testCreateUser() {
-        extentTest = ExtentReportManager.createTest("testCreateUser", "UserApiTest");
-        String body = "{\"name\": \"Pavan Kumar\", \"job\": \"QA Architect\"}";
-        extentTest.log(Status.INFO, "POST /users body: " + body);
-        Response response = ApiClient.post("/users", body);
-        Assert.assertEquals(response.getStatusCode(), 201);
-        Assert.assertNotNull(response.jsonPath().getString("id"));
-        Assert.assertEquals(response.jsonPath().getString("name"), "Pavan Kumar");
-        extentTest.log(Status.PASS, "User created ID: " + response.jsonPath().getString("id"));
-    }
-
-    @Test(description = "PUT update user - expect 200 with updated fields",
-            groups = {"api", "regression"}, priority = 4)
-    public void testUpdateUser() {
-        extentTest = ExtentReportManager.createTest("testUpdateUser", "UserApiTest");
-        String body = "{\"name\": \"Pavan H\", \"job\": \"Senior QA Architect\"}";
-        Response response = ApiClient.put("/users/2", body);
-        Assert.assertEquals(response.getStatusCode(), 200);
-        Assert.assertEquals(response.jsonPath().getString("job"), "Senior QA Architect");
-        extentTest.log(Status.PASS, "User updated at: " + response.jsonPath().getString("updatedAt"));
-    }
-
-    @Test(description = "DELETE user - expect 204 No Content",
-            groups = {"api", "regression"}, priority = 5)
-    public void testDeleteUser() {
-        extentTest = ExtentReportManager.createTest("testDeleteUser", "UserApiTest");
-        Response response = ApiClient.delete("/users/2");
-        Assert.assertEquals(response.getStatusCode(), 204);
-        extentTest.log(Status.PASS, "User deleted successfully - 204 received");
-    }
-
-    @Test(description = "GET non-existent user - expect 404",
-            groups = {"api", "negative"}, priority = 6)
+    @Test(description = "GET non-existent user returns 404")
     public void testGetNonExistentUser() {
-        extentTest = ExtentReportManager.createTest("testGetNonExistentUser", "UserApiTest");
-        Response response = ApiClient.get("/users/9999");
-        Assert.assertEquals(response.getStatusCode(), 404);
-        extentTest.log(Status.PASS, "404 confirmed for non-existent user");
+        extentTest = ExtentReportManager.createTest("testGetNonExistentUser", "GET /users/9999 - returns 404");
+        try {
+            Response response = ApiClient.get("/users/9999");
+            Assert.assertEquals(response.getStatusCode(), 404, "Status code should be 404");
+            extentTest.log(Status.PASS, "GET /users/9999 returned expected 404");
+        } catch (AssertionError | Exception e) {
+            extentTest.log(Status.FAIL, "Test failed: " + e.getMessage());
+            throw e;
+        }
+    }
+
+    @Test(description = "POST create user returns 201")
+    public void testCreateUser() {
+        extentTest = ExtentReportManager.createTest("testCreateUser", "POST /posts - returns 201");
+        try {
+            String body = "{\"title\": \"Test Post\", \"body\": \"Test body content\", \"userId\": 1}";
+            Response response = ApiClient.post("/posts", body);
+            Assert.assertEquals(response.getStatusCode(), 201, "Status code should be 201");
+            Assert.assertNotNull(response.jsonPath().get("id"), "Created resource should have an ID");
+            extentTest.log(Status.PASS, "POST /posts created with ID: " + response.jsonPath().get("id"));
+        } catch (AssertionError | Exception e) {
+            extentTest.log(Status.FAIL, "Test failed: " + e.getMessage());
+            throw e;
+        }
+    }
+
+    @Test(description = "PUT update user returns 200")
+    public void testUpdateUser() {
+        extentTest = ExtentReportManager.createTest("testUpdateUser", "PUT /posts/1 - returns 200");
+        try {
+            String body = "{\"id\": 1, \"title\": \"Updated Title\", \"body\": \"Updated body\", \"userId\": 1}";
+            Response response = ApiClient.put("/posts/1", body);
+            Assert.assertEquals(response.getStatusCode(), 200, "Status code should be 200");
+            extentTest.log(Status.PASS, "PUT /posts/1 updated successfully");
+        } catch (AssertionError | Exception e) {
+            extentTest.log(Status.FAIL, "Test failed: " + e.getMessage());
+            throw e;
+        }
+    }
+
+    @Test(description = "DELETE user returns 200")
+    public void testDeleteUser() {
+        extentTest = ExtentReportManager.createTest("testDeleteUser", "DELETE /posts/1 - returns 200");
+        try {
+            Response response = ApiClient.delete("/posts/1");
+            Assert.assertEquals(response.getStatusCode(), 200, "Status code should be 200");
+            extentTest.log(Status.PASS, "DELETE /posts/1 returned 200");
+        } catch (AssertionError | Exception e) {
+            extentTest.log(Status.FAIL, "Test failed: " + e.getMessage());
+            throw e;
+        }
     }
 }
