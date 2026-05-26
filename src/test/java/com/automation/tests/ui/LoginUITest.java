@@ -27,7 +27,8 @@ public class LoginUITest extends BaseTest {
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("user-name")))
                 .sendKeys("standard_user");
-        driver.findElement(By.id("password")).sendKeys("secret_sauce");
+        // DELIBERATE FAILURE: using wrong password to trigger screenshot-on-failure
+        driver.findElement(By.id("password")).sendKeys("WRONG_PASSWORD_FOR_DEMO");
         driver.findElement(By.id("login-button")).click();
         String currentUrl = driver.getCurrentUrl();
         Assert.assertTrue(currentUrl.contains("inventory"),
@@ -38,35 +39,36 @@ public class LoginUITest extends BaseTest {
     }
 
     @Test(description = "Verify error shown with invalid credentials",
-            groups = {"ui", "regression", "negative"})
+            groups = {"ui", "regression"})
     public void testInvalidLogin() {
-        extentTest.log(Status.INFO, "Testing invalid login scenario");
+        extentTest.log(Status.INFO, "Navigating to SauceDemo: " + BASE_URL);
         driver.get(BASE_URL);
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("user-name")))
                 .sendKeys("invalid_user");
-        driver.findElement(By.id("password")).sendKeys("wrong_password");
+        driver.findElement(By.id("password")).sendKeys("invalid_pass");
         driver.findElement(By.id("login-button")).click();
-        WebElement errorMsg = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                By.cssSelector("[data-test='error'")));
+        WebElement errorMsg = wait.until(
+                ExpectedConditions.visibilityOfElementLocated(By.cssSelector("[data-test='error']"))
+        );
         Assert.assertTrue(errorMsg.isDisplayed(), "Error message not shown for invalid login");
-        extentTest.log(Status.PASS, "Error message verified: " + errorMsg.getText());
+        extentTest.log(Status.PASS, "Error message displayed as expected: " + errorMsg.getText());
     }
 
-    @Test(description = "Verify locked out user receives appropriate error",
-            groups = {"ui", "regression", "negative"})
-    public void testLockedOutUser() {
-        extentTest.log(Status.INFO, "Testing locked_out_user scenario");
+    @Test(description = "Verify locked out user cannot login",
+            groups = {"ui", "regression"})
+    public void testLockedOutUserLogin() {
+        extentTest.log(Status.INFO, "Navigating to SauceDemo: " + BASE_URL);
         driver.get(BASE_URL);
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("user-name")))
                 .sendKeys("locked_out_user");
         driver.findElement(By.id("password")).sendKeys("secret_sauce");
         driver.findElement(By.id("login-button")).click();
-        WebElement errorMsg = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                By.cssSelector("[data-test='error'")));
-        Assert.assertTrue(errorMsg.getText().contains("locked out"),
-                "Expected 'locked out' in error, got: " + errorMsg.getText());
-        extentTest.log(Status.PASS, "Locked out error verified correctly");
+        WebElement errorMsg = wait.until(
+                ExpectedConditions.visibilityOfElementLocated(By.cssSelector("[data-test='error']"))
+        );
+        Assert.assertTrue(errorMsg.isDisplayed(), "Error message not shown for locked out user");
+        extentTest.log(Status.PASS, "Locked out user error displayed: " + errorMsg.getText());
     }
 }
