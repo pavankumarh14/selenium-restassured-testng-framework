@@ -21,7 +21,6 @@ public class ApiClient {
                 .setBaseUri(baseUri)
                 .setContentType(ContentType.JSON)
                 .setAccept(ContentType.JSON)
-                .addHeader("x-api-key", "reqres-free-v1")
                 .log(LogDetail.ALL)
                 .build();
         responseSpec = new ResponseSpecBuilder()
