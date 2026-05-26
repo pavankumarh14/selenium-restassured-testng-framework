@@ -9,14 +9,13 @@ pipeline {
   }
 
   tools {
-    maven 'Maven-3.9'
-    jdk 'JDK-17'
+    maven 'Maven3'
+    jdk 'Java17'
   }
 
   environment {
     REPORT_DIR = 'target/extent-reports'
     SCREENSHOT_DIR = 'target/screenshots'
-    TIMESTAMP = sh(script: 'date +%Y%m%d_%H%M%S', returnStdout: true).trim()
   }
 
   stages {
@@ -45,8 +44,7 @@ pipeline {
               -Dheadless=${params.HEADLESS} \\
               -Denv=${params.ENV} \\
               -Dreport.dir=${REPORT_DIR} \\
-              -Dscreenshot.dir=${SCREENSHOT_DIR} \\
-              -Dbuild.number=${env.BUILD_NUMBER}
+              -Dscreenshot.dir=${SCREENSHOT_DIR}
           """
         }
       }
@@ -55,14 +53,6 @@ pipeline {
 
   post {
     always {
-      publishHTML(target: [
-        allowMissing: true,
-        alwaysLinkToLastBuild: true,
-        keepAll: true,
-        reportDir: "${REPORT_DIR}",
-        reportFiles: 'ExtentReport.html',
-        reportName: "Extent Report - Build ${env.BUILD_NUMBER}"
-      ])
       archiveArtifacts artifacts: 'target/screenshots/**/*.png', allowEmptyArchive: true
       archiveArtifacts artifacts: 'target/surefire-reports/**', allowEmptyArchive: true
       junit testResults: 'target/surefire-reports/*.xml', allowEmptyResults: true
